@@ -2,6 +2,8 @@ package com.example.mani.mymap;
 
 import android.Manifest;
 import android.content.pm.PackageManager;
+import android.location.Address;
+import android.location.Geocoder;
 import android.location.Location;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
@@ -9,6 +11,11 @@ import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.FragmentActivity;
 import android.support.v4.content.ContextCompat;
 import android.util.Log;
+import android.view.KeyEvent;
+import android.view.View;
+import android.widget.AutoCompleteTextView;
+import android.widget.ImageView;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.google.android.gms.location.FusedLocationProviderClient;
@@ -22,6 +29,12 @@ import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+
+import static com.example.mani.mymap.CommonVariablesAndFunctions.hideSoftKeyboard;
+
 public class MapsActivity extends FragmentActivity implements OnMapReadyCallback {
 
     private final String TAG = "MapsActivity";
@@ -34,14 +47,15 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     LatLng mOrgin = null;
     LatLng mDestination = null;
 
-
-
     //vars
     private GoogleMap mMap;
     private Boolean mLocationPermissionsGranted = false;
     private FusedLocationProviderClient mFusedLocationProviderClient;
     MarkerOptions mMarkerOptions;
 
+    //Widgets
+    AutoCompleteTextView mSearchView;
+    ImageView mGps;
 
 
     @Override
@@ -50,7 +64,32 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         setContentView(R.layout.activity_maps);
 
         Log.d(TAG,"OnCreate");
+
         mMarkerOptions = new MarkerOptions();
+
+        mSearchView = findViewById(R.id.search_auto_complete);
+        mGps        = findViewById(R.id.gps);
+
+        mGps.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Log.d(TAG, "onClick: clicked gps icon");
+                getDeviceLocation();
+            }
+        });
+
+        mSearchView.setOnEditorActionListener(new TextView.OnEditorActionListener() {
+            @Override
+            public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
+
+                hideSoftKeyboard(MapsActivity.this);
+                if(mLocationPermissionsGranted)
+                    geoLocate();
+                else
+                    getLocationPermission();
+                return true;
+            }
+        });
 
         // get location of mobile and move camera to it.
         getLocationPermission();
@@ -80,7 +119,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             }
 
             mMap.setMyLocationEnabled(true);
-            mMap.getUiSettings().setMyLocationButtonEnabled(true);
+            mMap.getUiSettings().setMyLocationButtonEnabled(false);
 
             //init();
         }
@@ -88,6 +127,38 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         LatLng sydney = new LatLng(-34, 151);
         mMap.addMarker(new MarkerOptions().position(sydney).title("Marker in Sydney"));
         mMap.moveCamera(CameraUpdateFactory.newLatLng(sydney));
+    }
+
+    private void geoLocate()
+    {
+        Log.d(TAG,"geoLocate");
+
+        String searchString = mSearchView.getText().toString().trim();
+
+        Geocoder geocoder = new Geocoder(MapsActivity.this);
+
+        List<Address> addressList = new ArrayList<>();
+
+        try {
+            addressList = geocoder.getFromLocationName(searchString,1);
+
+        } catch (IOException e) {
+            Log.e(TAG, "geoLocate: IOException: " + e.getMessage() );
+        }
+
+        if(addressList.size() == 0){
+            Toast.makeText(MapsActivity.this,"No Location Found",Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        Address address = addressList.get(0);
+        mDestination = new LatLng(address.getLatitude(),address.getLongitude());
+
+        Log.d(TAG, "geoLocate: found a location: " + address.toString());
+
+        moveCamera(new LatLng(address.getLatitude(),address.getLongitude()),
+                DEFAULT_ZOOM,address.getAddressLine(0));
+
     }
 
 
@@ -204,6 +275,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
         //hideSoftKeyboard();
     }
+
 
 
 }
