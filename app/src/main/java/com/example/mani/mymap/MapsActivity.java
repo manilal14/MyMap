@@ -120,13 +120,11 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
             mMap.setMyLocationEnabled(true);
             mMap.getUiSettings().setMyLocationButtonEnabled(false);
+            mMap.getUiSettings().setMapToolbarEnabled(false);
 
             //init();
         }
 
-        LatLng sydney = new LatLng(-34, 151);
-        mMap.addMarker(new MarkerOptions().position(sydney).title("Marker in Sydney"));
-        mMap.moveCamera(CameraUpdateFactory.newLatLng(sydney));
     }
 
     private void geoLocate()
@@ -156,20 +154,11 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
         Log.d(TAG, "geoLocate: found a location: " + address.toString());
 
+
         moveCamera(new LatLng(address.getLatitude(),address.getLongitude()),
                 DEFAULT_ZOOM,address.getAddressLine(0));
 
     }
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -268,7 +257,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     private void moveCamera(LatLng latLng, float zoom, String title){
 
         Log.d(TAG, "moveCamera: moving the camera to: lat: " + latLng.latitude + ", lng: " + latLng.longitude );
-        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(latLng, zoom));
+        mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(latLng, zoom));
 
         mMarkerOptions = mMarkerOptions.position(latLng).title(title);
         mMap.addMarker(mMarkerOptions);
